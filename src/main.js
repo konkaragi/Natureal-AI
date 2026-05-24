@@ -165,6 +165,7 @@ function generateRecommendations() {
   state.recommendations = state.zones.map((zone) =>
     generatePlantMix(state.plants, zone, { ...site, ...getZoneSiteOverrides(zone) }, preferences)
   );
+  renderCad();
   renderRecommendations();
 }
 
