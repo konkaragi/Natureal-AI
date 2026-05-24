@@ -294,6 +294,8 @@ export function createZoneFromPolygon(points, overrides = {}) {
     points,
     community,
     exposure: overrides.exposure || "Full Sun",
+    drainage: overrides.drainage || defaultDrainageForCommunity(community),
+    waterTarget: overrides.waterTarget || defaultWaterForCommunity(community),
     areaM2: Math.round(polygonArea(points) / 520),
     sourceLayer: overrides.sourceLayer || "manual"
   };
@@ -389,4 +391,14 @@ function inferExposure(text) {
   const value = text.toLowerCase();
   if (value.includes("shade") || value.includes("wood")) return "Partial Sun";
   return "Full Sun";
+}
+
+function defaultDrainageForCommunity(community) {
+  if (community === "wetland") return "Moist but Well-Drained";
+  return "Well-Drained";
+}
+
+function defaultWaterForCommunity(community) {
+  if (community === "wetland" || community === "woodland-edge") return "Average";
+  return "Low";
 }

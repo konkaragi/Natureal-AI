@@ -121,7 +121,7 @@ function startDrawing() {
   state.draftPoints = [];
   dom.finishZoneButton.disabled = false;
   dom.interactionHint.textContent = "Click points around a planting area, then finish the zone.";
-  render();
+  renderCad();
 }
 
 function finishDrawing() {
@@ -149,7 +149,7 @@ function handleSvgClick(event) {
   if (!state.drawing) return;
   const point = getSvgPoint(event);
   state.draftPoints = [...state.draftPoints, point];
-  render();
+  renderCad();
 }
 
 function generateRecommendations() {
@@ -164,7 +164,9 @@ function generateRecommendations() {
     pollinatorPriority: dom.pollinatorInput.value
   });
 
-  state.recommendations = state.zones.map((zone) => generatePlantMix(state.plants, zone, site, preferences));
+  state.recommendations = state.zones.map((zone) =>
+    generatePlantMix(state.plants, zone, { ...site, ...getZoneSiteOverrides(zone) }, preferences)
+  );
   renderRecommendations();
 }
 
@@ -278,6 +280,22 @@ function renderZones() {
             ${option("Shade", "Shade", zone.exposure)}
           </select>
         </label>
+        <label>
+          Drainage
+          <select data-field="drainage">
+            ${option("Well-Drained", "Well-Drained", zone.drainage)}
+            ${option("Moist but Well-Drained", "Moist but Well-Drained", zone.drainage)}
+            ${option("Poorly Drained", "Poorly Drained", zone.drainage)}
+          </select>
+        </label>
+        <label>
+          Water
+          <select data-field="waterTarget">
+            ${option("Low", "Low", zone.waterTarget)}
+            ${option("Average", "Average", zone.waterTarget)}
+            ${option("Low,Average", "Low,Average", zone.waterTarget)}
+          </select>
+        </label>
       </div>
       <div class="badge-row">
         <span class="badge">${escapeHtml(zone.sourceLayer)}</span>
@@ -289,6 +307,9 @@ function renderZones() {
       input.addEventListener("click", (event) => event.stopPropagation());
       input.addEventListener("change", (event) => {
         zone[event.target.dataset.field] = event.target.value;
+        if (event.target.dataset.field === "community") {
+          applyCommunityDefaults(zone);
+        }
         generateRecommendations();
       });
     });
@@ -366,6 +387,26 @@ function getSiteInputs() {
     style: dom.styleInput.value,
     waterTarget: dom.waterInput.value
   };
+}
+
+function getZoneSiteOverrides(zone) {
+  return {
+    drainage: zone.drainage || dom.drainageInput.value,
+    waterTarget: zone.waterTarget || dom.waterInput.value
+  };
+}
+
+function applyCommunityDefaults(zone) {
+  if (zone.community === "wetland") {
+    zone.drainage = "Moist but Well-Drained";
+    zone.waterTarget = "Average";
+  } else if (zone.community === "shrub-steppe" || zone.community === "meadow" || zone.community === "low-scrub") {
+    zone.drainage = "Well-Drained";
+    zone.waterTarget = "Low";
+  } else if (zone.community === "woodland-edge") {
+    zone.drainage = "Moist but Well-Drained";
+    zone.waterTarget = "Average";
+  }
 }
 
 function getSvgPoint(event) {
