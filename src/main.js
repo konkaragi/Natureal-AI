@@ -267,7 +267,13 @@ function renderZones() {
   }
 
   dom.zoneList.innerHTML = "";
-  state.zones.forEach((zone) => {
+  const visibleZones = [...state.zones].sort((a, b) => {
+    if (a.id === state.selectedZoneId) return -1;
+    if (b.id === state.selectedZoneId) return 1;
+    return 0;
+  });
+
+  visibleZones.forEach((zone) => {
     const card = document.createElement("article");
     card.className = `zone-card ${zone.id === state.selectedZoneId ? "selected" : ""}`;
     card.addEventListener("click", () => {
