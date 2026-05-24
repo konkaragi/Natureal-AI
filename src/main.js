@@ -162,7 +162,13 @@ function generateRecommendations() {
     pollinatorPriority: dom.pollinatorInput.value
   });
 
-  state.recommendations = state.zones.map((zone) =>
+  const zonesForRecommendations = [...state.zones].sort((a, b) => {
+    if (a.id === state.selectedZoneId) return -1;
+    if (b.id === state.selectedZoneId) return 1;
+    return 0;
+  });
+
+  state.recommendations = zonesForRecommendations.map((zone) =>
     generatePlantMix(state.plants, zone, { ...site, ...getZoneSiteOverrides(zone) }, preferences)
   );
   renderCad();
