@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Natureal AI</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand-mark" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div>
+        <p class="eyebrow">Natureal AI</p>
+        <h1>CAD-to-naturalistic planting design</h1>
+      </div>
+      <div class="header-status" id="plantDataStatus">Loading plant data...</div>
+    </header>
+
+    <main class="app-shell">
+      <aside class="control-panel" aria-label="Site controls">
+        <section class="panel-section open">
+          <button class="section-title" type="button">Location</button>
+          <div class="section-body">
+            <label>
+              Project location
+              <input id="locationInput" value="Athens, Greece" />
+            </label>
+            <label>
+              Climate zone
+              <input id="climateInput" value="9" />
+            </label>
+            <label>
+              Coordinates
+              <input id="coordinateInput" value="37.9838, 23.7275" />
+            </label>
+            <div class="mini-map" aria-label="Map placeholder">
+              <span>Climate + native plant context</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-section open">
+          <button class="section-title" type="button">Soil</button>
+          <div class="section-body">
+            <label>
+              Soil texture
+              <select id="soilTypeInput">
+                <option>Loam</option>
+                <option>Clay</option>
+                <option>Sand</option>
+                <option>Chalk</option>
+              </select>
+            </label>
+            <label>
+              Soil pH
+              <select id="soilPhInput">
+                <option>Neutral</option>
+                <option>Acid</option>
+                <option>Alkaline</option>
+              </select>
+            </label>
+            <label>
+              Drainage
+              <select id="drainageInput">
+                <option>Well-Drained</option>
+                <option>Moist but Well-Drained</option>
+                <option>Poorly Drained</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel-section open">
+          <button class="section-title" type="button">Parameters</button>
+          <div class="section-body">
+            <label>
+              Planting approach
+              <select id="styleInput">
+                <option value="technocratic">Technocratic / ecological mixes</option>
+                <option value="impressionistic">Impressionistic / painterly drifts</option>
+                <option value="modernistic">Modernistic / form-led</option>
+              </select>
+            </label>
+            <label>
+              Water target
+              <select id="waterInput">
+                <option>Low</option>
+                <option>Average</option>
+                <option>Low,Average</option>
+              </select>
+            </label>
+            <label>
+              Pollinator priority
+              <select id="pollinatorInput">
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </label>
+            <label>
+              Preferred colors
+              <input id="colorInput" value="purple, white, blue" />
+            </label>
+            <label>
+              Seasonality
+              <input id="seasonInput" value="Spring, Summer, Fall, Winter" />
+            </label>
+          </div>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <div class="prompt-card">
+          <label for="promptInput">Write your prompt</label>
+          <textarea id="promptInput">Create a Mediterranean, low-water naturalistic garden with tall shrubs, pollinator value, purple-white flowers, grasses, and year-round structure.</textarea>
+        </div>
+
+        <div class="tool-row">
+          <label class="file-button">
+            Upload CAD / SVG
+            <input id="cadInput" type="file" accept=".dxf,.dwg,.svg,.pdf,.png,.jpg,.jpeg" />
+          </label>
+          <button id="autoDetectButton" type="button">Auto-detect zones</button>
+          <button id="drawZoneButton" type="button">Draw zone</button>
+          <button id="finishZoneButton" type="button" disabled>Finish zone</button>
+          <button id="generateButton" type="button">Generate plant design</button>
+        </div>
+
+        <div class="cad-stage">
+          <div class="cad-toolbar">
+            <div>
+              <strong id="cadTitle">Sample CAD plan</strong>
+              <span id="cadMeta">Closed planting beds, paths, contours, and annotations</span>
+            </div>
+            <span id="interactionHint">Select, auto-detect, or draw planting zones.</span>
+          </div>
+          <svg id="cadSvg" viewBox="0 0 1000 650" role="img" aria-label="Interactive CAD viewer"></svg>
+        </div>
+      </section>
+
+      <aside class="result-panel" aria-label="Planting zones and recommendations">
+        <section>
+          <div class="panel-heading">
+            <h2>Planting zones</h2>
+            <span id="zoneCount">0 zones</span>
+          </div>
+          <div id="zoneList" class="zone-list"></div>
+        </section>
+
+        <section>
+          <div class="panel-heading">
+            <h2>Plant mix</h2>
+            <span>max 20 species / mix</span>
+          </div>
+          <div id="recommendationList" class="recommendation-list empty-state">
+            Generate a plant design to populate anchors, matrix, satellites, and fillers.
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
