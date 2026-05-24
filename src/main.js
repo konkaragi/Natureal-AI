@@ -121,7 +121,7 @@ function startDrawing() {
   state.draftPoints = [];
   dom.finishZoneButton.disabled = false;
   dom.interactionHint.textContent = "Click points around a planting area, then finish the zone.";
-  renderCad();
+  clearDraftOverlay();
 }
 
 function finishDrawing() {
@@ -147,9 +147,7 @@ function finishDrawing() {
 
 function handleSvgClick(event) {
   if (!state.drawing) return;
-  const point = getSvgPoint(event);
-  state.draftPoints = [...state.draftPoints, point];
-  renderCad();
+  addDraftPoint(event);
 }
 
 function generateRecommendations() {
@@ -213,6 +211,10 @@ function renderCad() {
     polygon.setAttribute("class", `zone-shape ${zone.id === state.selectedZoneId ? "selected" : ""}`);
     polygon.addEventListener("click", (event) => {
       event.stopPropagation();
+      if (state.drawing) {
+        addDraftPoint(event);
+        return;
+      }
       state.selectedZoneId = zone.id;
       render();
     });
@@ -220,20 +222,39 @@ function renderCad() {
   });
 
   if (state.draftPoints.length) {
-    const draft = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-    draft.setAttribute("points", pointsToAttribute(state.draftPoints));
-    draft.setAttribute("class", "draft-line");
-    dom.cadSvg.append(draft);
-
-    state.draftPoints.forEach((point) => {
-      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      circle.setAttribute("cx", point.x);
-      circle.setAttribute("cy", point.y);
-      circle.setAttribute("r", 5);
-      circle.setAttribute("class", "draft-point");
-      dom.cadSvg.append(circle);
-    });
+    renderDraftOverlay();
   }
+}
+
+function addDraftPoint(event) {
+  const point = getSvgPoint(event);
+  state.draftPoints = [...state.draftPoints, point];
+  renderDraftOverlay();
+}
+
+function renderDraftOverlay() {
+  clearDraftOverlay();
+  if (!state.draftPoints.length) return;
+
+  const draft = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+  draft.setAttribute("points", pointsToAttribute(state.draftPoints));
+  draft.setAttribute("class", "draft-line");
+  draft.dataset.draft = "true";
+  dom.cadSvg.append(draft);
+
+  state.draftPoints.forEach((point) => {
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", point.x);
+    circle.setAttribute("cy", point.y);
+    circle.setAttribute("r", 5);
+    circle.setAttribute("class", "draft-point");
+    circle.dataset.draft = "true";
+    dom.cadSvg.append(circle);
+  });
+}
+
+function clearDraftOverlay() {
+  dom.cadSvg.querySelectorAll("[data-draft='true']").forEach((node) => node.remove());
 }
 
 function renderZones() {
