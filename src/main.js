@@ -5,6 +5,7 @@ import {
   parseCadText
 } from "./cadEngine.js";
 import { derivePreferences, generatePlantMix, getRoleLabels, parsePlantsCsv } from "./plantEngine.js";
+import { placePlantMix } from "./placementEngine.js";
 
 const state = {
   plants: [],
@@ -13,7 +14,8 @@ const state = {
   selectedZoneId: null,
   drawing: false,
   draftPoints: [],
-  recommendations: []
+  recommendations: [],
+  plantingPlans: []
 };
 
 const dom = {
@@ -111,6 +113,7 @@ function autoDetectZones() {
   state.zones = detectPlantingZones(state.cad);
   state.selectedZoneId = state.zones[0]?.id || null;
   state.recommendations = [];
+  state.plantingPlans = [];
   dom.interactionHint.textContent = state.zones.length
     ? "Review detected planting zones, then generate plant mixes."
     : "No planting zones detected. Draw polygons manually.";
@@ -171,6 +174,10 @@ function generateRecommendations() {
   state.recommendations = zonesForRecommendations.map((zone) =>
     generatePlantMix(state.plants, zone, { ...site, ...getZoneSiteOverrides(zone) }, preferences)
   );
+  state.plantingPlans = state.recommendations.map((mix) => {
+    const zone = state.zones.find((candidate) => candidate.id === mix.zoneId);
+    return { zoneId: mix.zoneId, ...placePlantMix(zone, mix) };
+  });
   renderCad();
   renderRecommendations();
 }
@@ -228,9 +235,34 @@ function renderCad() {
     dom.cadSvg.append(polygon);
   });
 
+  state.plantingPlans.forEach((plan) => renderPlantingPlan(plan));
+
   if (state.draftPoints.length) {
     renderDraftOverlay();
   }
+}
+
+function renderPlantingPlan(plan) {
+  if (plan.sLine?.length) {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    path.setAttribute("points", pointsToAttribute(plan.sLine));
+    path.setAttribute("class", "s-line");
+    dom.cadSvg.append(path);
+  }
+
+  (plan.placements || []).forEach((placement) => {
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", placement.x);
+    circle.setAttribute("cy", placement.y);
+    circle.setAttribute("r", placement.r);
+    circle.setAttribute("class", `plant-node plant-node-${placement.role}`);
+    circle.setAttribute("fill", placement.color);
+    circle.dataset.scientificName = placement.scientificName;
+    const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+    title.textContent = `${placement.scientificName} (${getRoleLabels()[placement.role]})`;
+    circle.append(title);
+    dom.cadSvg.append(circle);
+  });
 }
 
 function addDraftPoint(event) {
@@ -367,6 +399,7 @@ function renderRecommendations() {
   dom.recommendationList.innerHTML = "";
 
   state.recommendations.forEach((mix) => {
+    const plan = state.plantingPlans.find((candidate) => candidate.zoneId === mix.zoneId);
     const wrapper = document.createElement("article");
     wrapper.className = "role-group";
     wrapper.innerHTML = `
@@ -375,6 +408,10 @@ function renderRecommendations() {
         <p>${escapeHtml(mix.summary)} Density: ${escapeHtml(mix.density)}.</p>
       </div>
     `;
+
+    if (plan?.schedule?.length) {
+      wrapper.append(createScheduleTable(plan.schedule));
+    }
 
     Object.entries(labels).forEach(([role, label]) => {
       const plants = mix.groups[role] || [];
@@ -390,6 +427,31 @@ function renderRecommendations() {
 
     dom.recommendationList.append(wrapper);
   });
+}
+
+function createScheduleTable(schedule) {
+  const labels = getRoleLabels();
+  const table = document.createElement("table");
+  table.className = "schedule-table";
+  table.innerHTML = `
+    <thead>
+      <tr><th></th><th>Species</th><th>Role</th><th>Qty</th></tr>
+    </thead>
+    <tbody>
+      ${schedule
+        .map(
+          (entry) => `
+        <tr>
+          <td><span class="swatch" style="background:${entry.color}"></span></td>
+          <td>${escapeHtml(entry.scientificName)}</td>
+          <td>${escapeHtml(labels[entry.role] || entry.role)}</td>
+          <td>${entry.quantity}</td>
+        </tr>`
+        )
+        .join("")}
+    </tbody>
+  `;
+  return table;
 }
 
 function createPlantCard(plant) {

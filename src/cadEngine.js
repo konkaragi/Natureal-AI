@@ -354,7 +354,7 @@ function looksLikePlantingEntity(entity, annotations) {
   return ZONE_KEYWORDS.some((keyword) => text.includes(keyword));
 }
 
-function pointInPolygon(point, polygon) {
+export function pointInPolygon(point, polygon) {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
     const xi = polygon[i].x;

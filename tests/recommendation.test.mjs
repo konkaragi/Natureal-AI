@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createSampleCad, detectPlantingZones, parseDxf } from "../src/cadEngine.js";
+import { createSampleCad, detectPlantingZones, parseDxf, pointInPolygon } from "../src/cadEngine.js";
 import { derivePreferences, generatePlantMix, parsePlantsCsv } from "../src/plantEngine.js";
+import { placePlantMix } from "../src/placementEngine.js";
 
 const csv = await readFile(new URL("../data/plants.csv", import.meta.url), "utf8");
 const plants = parsePlantsCsv(csv);
@@ -87,5 +88,28 @@ const zones = detectPlantingZones(parsed);
 
 assert.equal(zones.length, 1, "DXF closed planting polylines should become zones");
 assert.equal(zones[0].community, "wetland", "CAD annotation should influence zone community");
+
+const plan = placePlantMix({ ...detectedZones[0], id: "meadow-zone" }, mix);
+
+assert.ok(plan.sLine.length > 0, "placement should generate an S-line through the zone");
+assert.ok(plan.placements.length > 0, "placement should generate plant instances");
+assert.ok(
+  plan.placements.every((placement) => pointInPolygon(placement, detectedZones[0].points)),
+  "every placed plant should fall inside the zone polygon"
+);
+assert.ok(
+  ["frameworkAnchor", "matrixAnchor", "satellite", "filler"].every((role) =>
+    plan.placements.some((placement) => placement.role === role)
+  ),
+  "placement should cover all four naturalistic structural roles"
+);
+assert.ok(plan.schedule.length > 0, "placement should produce a plant schedule with quantities");
+assert.ok(
+  plan.schedule.every((entry) => entry.quantity > 0),
+  "every scheduled species should have a positive quantity"
+);
+
+const totalScheduled = plan.schedule.reduce((sum, entry) => sum + entry.quantity, 0);
+assert.equal(totalScheduled, plan.placements.length, "schedule quantities should sum to total placements");
 
 console.log("recommendation and CAD parser tests passed");
